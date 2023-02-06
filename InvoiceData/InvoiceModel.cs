@@ -1,38 +1,26 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace InvoiceToPdf.Invoices;
 
-namespace InvoiceToPdf.Invoices;
-
-public class InvoiceModel
+public record InvoiceModel
 {
-    public string InvoiceNumber { get; set; } = "";
-    public DateTime IssueDate { get; set; }
-    public DateTime DueDate { get; set; }
+    public required string InvoiceNumber { get; init; }
+    public required string BookingReference { get; init; }
+    public required DateTime IssueDate { get; init; }
+    public required DateTime DueDate { get; init; }
 
-    public Address SellerAddress { get; set; } = new();
-    public Address CustomerAddress { get; set; } = new();
+    public required Company Company { get; init; }
+    public required Address BillingAddress { get; init; }
 
-    public IEnumerable<OrderItem> Items { get; set; } = Enumerable.Empty<OrderItem>();
-    public string Comments { get; set; } = "";
+    public IEnumerable<OrderItem> Items { get; init; } = Enumerable.Empty<OrderItem>();
+    public string Notes { get; init; } = "";
 }
 
-public class OrderItem
-{
-    public string Name { get; set; } = "";
-    public decimal Price { get; set; }
-    public decimal VAT { get; set; }
-    public int Quantity { get; set; }
-}
+public record OrderItem(string Name, decimal Price, decimal VAT, int Quantity);
 
-public class Address
+public record Company(string Name, Address Address, string VATNumber, string Number);
+
+public record Address(string Name, string Street, string City, string County, string PostCode);
+
+public static class OrderItemExtensions
 {
-    public string CompanyName { get; set; } = "";
-    public string Street { get; set; } = "";
-    public string City { get; set; } = "";
-    public string State { get; set; } = "";
-    public object Email { get; set; } = "";
-    public string Phone { get; set; } = "";
+    public static decimal CalculateTotal(this OrderItem item) => (item.Price * (1m + (item.VAT * 0.01m))) * item.Quantity;
 }

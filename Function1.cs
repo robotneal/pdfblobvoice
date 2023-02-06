@@ -9,6 +9,9 @@ using System.Text.Json;
 
 namespace InvoiceToPdf
 {
+    // FUNCTION ONE.
+    // 3..2..1... FUNCTION ONE LIFT OFF.
+    // The synchronous journey begins
     public class Function1
     {
         private readonly ILogger _logger;
@@ -19,13 +22,17 @@ namespace InvoiceToPdf
             _logger = loggerFactory.CreateLogger<Function1>();
             _invoiceStore = invoiceStore;
         }
-
+        
         [Function("Function1")]
         public HttpResponseData Run(
             [HttpTrigger(AuthorizationLevel.Function, "get", "put", Route = "{invoiceNumber}")] HttpRequestData req,
-            string invoiceNumber,
-            ExecutionContext context)
+            string invoiceNumber)
         {
+            if(invoiceNumber is null || invoiceNumber.Length < 4)
+            {
+                return ErrorResponse(req);
+            }
+
             var response = req.Method switch
             {
                 "GET" => GetResponse(req, invoiceNumber),
@@ -38,10 +45,10 @@ namespace InvoiceToPdf
 
         private HttpResponseData ErrorResponse(HttpRequestData req)
         {
-            _logger.LogError("Error!");
+            _logger.LogError("Oh no. Something went wrong.");
             var response = HttpResponseData.CreateResponse(req);
             response.StatusCode = HttpStatusCode.InternalServerError;
-            response.Headers.Add("Content-Type", "text");
+            response.Headers.Add("Content-Type", "text/plain");
             return response;
         }
 
@@ -57,7 +64,7 @@ namespace InvoiceToPdf
                 return ErrorResponse(req);
             }
 
-            _invoiceStore.SaveInvoice(model);
+            _invoiceStore.SaveInvoice(model with { InvoiceNumber = invoiceNumber });
             return GenerateDocumentResponse(req, model);
         }
 
@@ -65,36 +72,6 @@ namespace InvoiceToPdf
         {
             _logger.LogError($"Get Invoice {invoiceNumber}");
             var model = _invoiceStore.GetInvoice(invoiceNumber);
-            //var model = new InvoiceModel
-            //{
-            //    InvoiceNumber = "Bentham",
-            //    Items = new List<OrderItem>
-            //    {
-            //        new OrderItem
-            //        {
-            //            Name = "magic beans",
-            //            Price = 10,
-            //            VAT = 20,
-            //            Quantity = 5,
-            //        },
-            //        new OrderItem
-            //        {
-            //            Name = "magic horse",
-            //            Price = 468.99m,
-            //            VAT = 20,
-            //            Quantity = 1,
-            //        },
-            //        new OrderItem
-            //        {
-            //            Name = "so many treats",
-            //            Price = 20,
-            //            VAT = 20,
-            //            Quantity = 1000,
-            //        }
-            //    },
-            //    Comments = "I hunger. My tummy. It rumbles. I am left to eat toilet roll and carpet fluff."
-            //};
-
             return GenerateDocumentResponse(req, model);
         }
 

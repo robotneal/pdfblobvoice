@@ -7,7 +7,7 @@ namespace InvoiceToPdf.Invoices;
 
 public class InvoiceDocument : IDocument
 {
-    public InvoiceModel Model { get; }
+    public InvoiceModel Model { get; init; }
 
     public InvoiceDocument(InvoiceModel model)
     {
@@ -42,8 +42,12 @@ public class InvoiceDocument : IDocument
             row.RelativeItem().Column(Column =>
             {
                 Column
-                    .Item().Text($"Invoice #{Model.InvoiceNumber}")
-                    .FontSize(20).SemiBold().FontColor(Colors.Blue.Medium);
+                    .Item().Text($"Invoice: #{Model.InvoiceNumber}")
+                    .FontSize(20).SemiBold();
+
+                Column
+                    .Item().Text($"Booking Ref: #{Model.BookingReference}")
+                    .FontSize(14);
 
                 Column.Item().Text(text =>
                 {
@@ -70,18 +74,22 @@ public class InvoiceDocument : IDocument
 
             column.Item().Row(row =>
             {
-                row.RelativeItem().Component(new AddressComponent("From", Model.SellerAddress));
+                row.RelativeItem().Component(new AddressComponent("From", Model.Company.Address));
                 row.ConstantItem(50);
-                row.RelativeItem().Component(new AddressComponent("For", Model.CustomerAddress));
+                row.RelativeItem().Component(new AddressComponent("For", Model.BillingAddress));
             });
+
+            if (!string.IsNullOrWhiteSpace(Model.Notes))
+            {
+                column.Item().PaddingTop(25).Element(AddNotes);
+            }
 
             column.Item().Element(ComposeTable);
 
             var totalPrice = Model.Items.Sum(x => x.Price * x.Quantity);
             column.Item().PaddingRight(5).AlignRight().Text($"Grand total: {totalPrice:C}").SemiBold();
 
-            if (!string.IsNullOrWhiteSpace(Model.Comments))
-                column.Item().PaddingTop(25).Element(ComposeComments);
+            
         });
     }
 
@@ -110,7 +118,7 @@ public class InvoiceDocument : IDocument
                 header.Cell().AlignRight().Text("VAT (%)").Style(headerStyle);
                 header.Cell().AlignRight().Text("Total").Style(headerStyle);
 
-                header.Cell().ColumnSpan(5).PaddingTop(5).BorderBottom(1).BorderColor(Colors.Black);
+                header.Cell().ColumnSpan(6).PaddingTop(5).BorderBottom(1).BorderColor(Colors.Black);
             });
 
             int index = 1;
@@ -121,20 +129,20 @@ public class InvoiceDocument : IDocument
                 table.Cell().Element(CellStyle).AlignRight().Text($"{item.Price:C}");
                 table.Cell().Element(CellStyle).AlignRight().Text($"{item.Quantity}");
                 table.Cell().Element(CellStyle).AlignRight().Text($"{item.VAT}%");
-                table.Cell().Element(CellStyle).AlignRight().Text($"{(item.Price * item.Quantity):C}");
+                table.Cell().Element(CellStyle).AlignRight().Text($"{item.CalculateTotal():C}");
 
                 static IContainer CellStyle(IContainer container) => container.BorderBottom(1).BorderColor(Colors.Grey.Lighten2).PaddingVertical(5);
             }
         });
     }
 
-    void ComposeComments(IContainer container)
+    void AddNotes(IContainer container)
     {
         container.ShowEntire().Background(Colors.Grey.Lighten3).Padding(10).Column(column =>
         {
             column.Spacing(5);
-            column.Item().Text("Comments").FontSize(14).SemiBold();
-            column.Item().Text(Model.Comments);
+            column.Item().Text("Notes").FontSize(14).SemiBold();
+            column.Item().Text(Model.Notes);
         });
     }
 }

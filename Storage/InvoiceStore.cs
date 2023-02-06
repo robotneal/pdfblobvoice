@@ -17,10 +17,10 @@ internal class InvoiceStore : IInvoiceStore
 {
     private readonly ILogger<InvoiceStore> _logger;
     private readonly string _location;
-    private readonly Credentials _cred;
-    private readonly IInvoiceCrypto _invoiceCrypto;
+    private readonly ICredentials _cred;
+    private readonly IBlobCrypto _invoiceCrypto;
 
-    public InvoiceStore(ILogger<InvoiceStore> logger, IConfiguration config, IInvoiceCrypto invoiceCrypto, Credentials cred)
+    public InvoiceStore(ILogger<InvoiceStore> logger, IConfiguration config, IBlobCrypto invoiceCrypto, ICredentials cred)
     {
         _logger = logger;
 
